@@ -4,7 +4,7 @@
  * @module state/photobooth
  */
 
-/** @typedef {'idle'|'format_select'|'background_select'|'capturing'|'composing'|'result'} AppState */
+/** @typedef {'idle'|'format_select'|'capturing'|'composing'|'preview'|'result'} AppState */
 /** @typedef {'stripe'|'collage'|'polaroid'|'grid'} PhotoFormat */
 /** @typedef {{ type: 'color'|'image', value: string }} Background */
 

@@ -3,7 +3,7 @@
    * Countdown — zeigt visuellen Rückwärtszähler vor der Auslösung.
    * @module components/Countdown
    */
-  import { onMount, onDestroy, untrack } from 'svelte';
+  import { onMount, onDestroy, untrack } from "svelte";
 
   /** @type {{ seconds: number, onComplete: () => void }} */
   let { seconds = 3, onComplete } = $props();
@@ -24,7 +24,7 @@
 
   onDestroy(() => clearInterval(interval));
 
-  const progress = $derived(((seconds - remaining) / seconds) * 100);
+  const progress = $derived(remaining / seconds);
   const circumference = 2 * Math.PI * 90;
   const dashOffset = $derived(circumference - (progress / 100) * circumference);
 </script>
@@ -33,7 +33,9 @@
   <svg class="countdown-ring" viewBox="0 0 200 200">
     <circle cx="100" cy="100" r="90" class="ring-bg" />
     <circle
-      cx="100" cy="100" r="90"
+      cx="100"
+      cy="100"
+      r="90"
       class="ring-progress"
       stroke-dasharray={circumference}
       stroke-dashoffset={dashOffset}
@@ -55,7 +57,7 @@
   .countdown-ring {
     position: absolute;
     inset: 0;
-    transform: rotate(-90deg);
+    transform: rotate(90deg);
   }
 
   .ring-bg {
@@ -69,7 +71,7 @@
     stroke: #f472b6;
     stroke-width: 8;
     stroke-linecap: round;
-    transition: stroke-dashoffset 0.9s linear;
+    transition: stroke-dashoffset 0.6s linear;
   }
 
   .number {

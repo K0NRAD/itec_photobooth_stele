@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const BUCKET = 'photobooth';
+const BUCKET = import.meta.env.VITE_SUPABASE_BUCKET ?? 'photos';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -23,7 +23,11 @@ export async function uploadPhoto(blob, sessionId, format) {
 
   const { error } = await supabase.storage
     .from(BUCKET)
-    .upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+    .upload(path, blob, { 
+      contentType: 'image/jpeg', 
+      cacheControl: '3600',
+      upsert: false,    
+    });
 
   if (error) {
     console.error('[supabase] Upload-Fehler:', error.message);

@@ -1,15 +1,7 @@
 <script>
-  /**
-   * App — Haupt-Komponente mit State-Machine-Steuerung.
-   * Koordiniert alle Screens und verarbeitet Sprachbefehle.
-   * @module App
-   */
-  import { onMount } from 'svelte';
-
   import VoiceControl from './components/VoiceControl.svelte';
   import Countdown from './components/Countdown.svelte';
   import FormatSelector from './components/FormatSelector.svelte';
-  import BackgroundPicker from './components/BackgroundPicker.svelte';
   import QRCode from './components/QRCode.svelte';
   import AdminPanel from './components/AdminPanel.svelte';
   import PhotoStripe from './components/formats/PhotoStripe.svelte';
@@ -22,48 +14,37 @@
     transition, startSession, addPhoto, setResult, reset,
   } from './state/photobooth.svelte.js';
 
-  import { connectCamera, triggerCapture, fetchPhotoAsBlob, onCameraEvent } from './services/camera.js';
+  import { initCamera, captureFrame, stopCamera } from './services/camera.js';
   import { uploadPhoto } from './services/supabase.js';
   import { composeImage } from './services/composer.js';
 
-  /** @type {boolean} */
   let showAdmin = $state(false);
-  /** @type {boolean} */
   let capturing = $state(false);
-  /** @type {boolean} */
   let showCountdown = $state(false);
-  /** @type {string} */
   let statusMessage = $state('');
+  /** @type {string|null} */
+  let previewUrl = $state(null);
+  /** @type {Blob|null} */
+  let pendingBlob = $state(null);
+
+  /** @type {HTMLVideoElement} */
+  let videoEl = $state(null);
 
   let adminPressTimer = null;
 
-  onMount(() => {
-    connectCamera();
-    const unsubWs = onCameraEvent(handleCameraEvent);
-    return unsubWs;
+  $effect(() => {
+    if (pb.currentState !== 'capturing' || !videoEl) return;
+    initCamera(videoEl).catch((err) => {
+      statusMessage = `Kamera-Fehler: ${err.message}`;
+    });
+    return () => stopCamera();
   });
 
   /**
-   * @param {object} event
-   */
-  function handleCameraEvent(event) {
-    if (event.type === 'capture_done' && event.photoUrl) {
-      handlePhotoCaptured(event.photoUrl);
-    }
-    if (event.type === 'error') {
-      statusMessage = `Kamera-Fehler: ${event.message}`;
-    }
-  }
-
-  /**
-   * Verarbeitet einen erkannten Sprachbefehl.
    * @param {string} command
    */
   function handleVoiceCommand(command) {
-    if (command === 'admin') {
-      showAdmin = true;
-      return;
-    }
+    if (command === 'admin') { showAdmin = true; return; }
 
     if (pb.currentState === 'idle') {
       if (command === 'start') transition('format_select');
@@ -73,23 +54,20 @@
       } else if (command === 'next') {
         handleFormatSelect(pb.selectedFormat);
       }
-    } else if (pb.currentState === 'background_select') {
-      if (command === 'next') transition('capturing');
     } else if (pb.currentState === 'capturing') {
-      if (command === 'capture' && !capturing) {
-        triggerNextPhoto();
-      }
+      if (command === 'capture' && !capturing) triggerNextPhoto();
+    } else if (pb.currentState === 'preview') {
+      if (command === 'save') doUpload();
+      if (command === 'restart') resetPreview();
     } else if (pb.currentState === 'result') {
       if (command === 'restart') reset();
     }
   }
 
-  /**
-   * @param {string} format
-   */
+  /** @param {string} format */
   function handleFormatSelect(format) {
     startSession(format);
-    transition('background_select');
+    transition('capturing');
   }
 
   async function triggerNextPhoto() {
@@ -102,48 +80,46 @@
     showCountdown = false;
     statusMessage = 'Aufnahme...';
 
-    const result = await triggerCapture(pb.sessionId, pb.photos.length);
-
-    if (!result.success) {
-      statusMessage = result.error || 'Aufnahme fehlgeschlagen';
+    try {
+      const blobUrl = await captureFrame(videoEl);
+      addPhoto(blobUrl);
+      statusMessage = `Foto ${pb.photos.length} / ${derived.requiredPhotos}`;
       capturing = false;
-      return;
-    }
-
-    if (result.photoUrl) {
-      await handlePhotoCaptured(result.photoUrl);
-    }
-  }
-
-  /**
-   * @param {string} photoUrl
-   */
-  async function handlePhotoCaptured(photoUrl) {
-    const blobUrl = await fetchPhotoAsBlob(photoUrl);
-    addPhoto(blobUrl);
-    statusMessage = `Foto ${pb.photos.length} / ${derived.requiredPhotos}`;
-    capturing = false;
-
-    if (derived.allPhotosTaken) {
-      await composeAndUpload();
+      if (derived.allPhotosTaken) await composeAndUpload();
+    } catch (err) {
+      statusMessage = `Aufnahme fehlgeschlagen: ${err.message}`;
+      capturing = false;
     }
   }
 
   async function composeAndUpload() {
     transition('composing');
     statusMessage = 'Bild wird erstellt...';
-
     const blob = await composeImage(pb.photos, pb.selectedFormat, pb.background);
+    pendingBlob = blob;
+    previewUrl = URL.createObjectURL(blob);
+    transition('preview');
+  }
+
+  async function doUpload() {
+    if (!pendingBlob) return;
+    transition('composing');
     statusMessage = 'Hochladen...';
-
-    const { publicUrl, error } = await uploadPhoto(blob, pb.sessionId, pb.selectedFormat);
-
+    const { publicUrl, error } = await uploadPhoto(pendingBlob, pb.sessionId, pb.selectedFormat);
+    pendingBlob = null;
     if (error || !publicUrl) {
       statusMessage = `Upload fehlgeschlagen: ${error}`;
+      transition('preview');
       return;
     }
-
     setResult(publicUrl);
+  }
+
+  function resetPreview() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
+    pendingBlob = null;
+    reset();
   }
 
   function startAdminPress() {
@@ -194,54 +170,56 @@
       />
     </div>
 
-  {:else if pb.currentState === 'background_select'}
-    <div class="screen">
-      <BackgroundPicker
-        background={pb.background}
-        onDone={() => transition('capturing')}
-      />
-    </div>
-
   {:else if pb.currentState === 'capturing'}
-    <div class="screen center">
-      <h2>Foto {pb.photos.length + 1} von {derived.requiredPhotos}</h2>
+    <div class="screen capturing-screen">
+      <video bind:this={videoEl} class="camera-fullscreen" autoplay playsinline muted></video>
 
-      <div class="format-preview-container">
-        {#if pb.selectedFormat === 'stripe'}
-          <PhotoStripe photos={pb.photos} />
-        {:else if pb.selectedFormat === 'collage'}
-          <PhotoCollage photos={pb.photos} />
-        {:else if pb.selectedFormat === 'polaroid'}
-          <PolaroidPhoto photos={pb.photos} />
-        {:else}
-          <PhotoGrid photos={pb.photos} />
-        {/if}
-      </div>
-
-      {#if showCountdown}
-        <div class="countdown-overlay">
-          <Countdown seconds={3} onComplete={onCountdownComplete} />
+      <div class="capturing-overlay">
+        <div class="capturing-top">
+          <span class="photo-counter">Foto {pb.photos.length + 1} / {derived.requiredPhotos}</span>
         </div>
-      {:else if !derived.allPhotosTaken}
-        <button
-          class="capture-btn"
-          disabled={capturing}
-          onclick={triggerNextPhoto}
-        >
-          {capturing ? 'Aufnahme...' : '📷 Foto aufnehmen'}
-        </button>
-        <p class="hint">Oder sage <strong>"Foto"</strong></p>
-      {/if}
 
-      {#if statusMessage}
-        <p class="status">{statusMessage}</p>
-      {/if}
+        {#if showCountdown}
+          <div class="countdown-center">
+            <Countdown seconds={3} onComplete={onCountdownComplete} />
+          </div>
+        {/if}
+
+        <div class="capturing-bottom">
+          {#if statusMessage}
+            <p class="status">{statusMessage}</p>
+          {/if}
+          {#if !showCountdown && !capturing}
+            <button class="shutter-btn" onclick={triggerNextPhoto}>
+              <span class="shutter-inner"></span>
+            </button>
+            <p class="hint">Oder sage <strong>"Foto"</strong></p>
+          {/if}
+        </div>
+      </div>
     </div>
 
   {:else if pb.currentState === 'composing'}
     <div class="screen center">
       <div class="spinner"></div>
       <p class="status">{statusMessage}</p>
+    </div>
+
+  {:else if pb.currentState === 'preview'}
+    <div class="screen center">
+      <h2>Vorschau</h2>
+      <div class="preview-container">
+        <img src={previewUrl} alt="Vorschau" class="preview-image" />
+      </div>
+      <div class="preview-actions">
+        <button class="capture-btn" onclick={doUpload}>
+          Speichern
+        </button>
+        <button class="discard-btn" onclick={resetPreview}>
+          Nochmal
+        </button>
+      </div>
+      <p class="hint">Sage <strong>"Speichern"</strong> oder <strong>"Nochmal"</strong></p>
     </div>
 
   {:else if pb.currentState === 'result'}
@@ -355,23 +333,125 @@
     transform: scale(1.04);
   }
 
-  .format-preview-container {
-    width: 100%;
-    max-width: 640px;
-    max-height: 55vh;
+  .capturing-screen {
+    position: relative;
     overflow: hidden;
-    border-radius: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.1);
   }
 
-  .countdown-overlay {
-    position: fixed;
+  .camera-fullscreen {
+    position: absolute;
     inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform: scaleX(-1);
+    background: #000;
+  }
+
+  .capturing-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 48px 40px 60px;
+    background: linear-gradient(
+      to bottom,
+      rgba(0,0,0,0.5) 0%,
+      transparent 25%,
+      transparent 65%,
+      rgba(0,0,0,0.6) 100%
+    );
+  }
+
+  .capturing-top {
+    display: flex;
+    justify-content: center;
+  }
+
+  .photo-counter {
+    font-size: 28px;
+    font-weight: 700;
+    color: white;
+    background: rgba(0,0,0,0.4);
+    padding: 10px 28px;
+    border-radius: 50px;
+    letter-spacing: 0.05em;
+  }
+
+  .countdown-center {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.7);
-    z-index: 50;
+    flex: 1;
+  }
+
+  .capturing-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .shutter-btn {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    border: 4px solid white !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s, background 0.1s;
+    padding: 0;
+  }
+
+  .shutter-btn:active {
+    transform: scale(0.92);
+    background: rgba(255, 255, 255, 0.45);
+  }
+
+  .shutter-inner {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: white;
+    display: block;
+  }
+
+  .preview-container {
+    width: 100%;
+    max-width: 420px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  .preview-image {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .preview-actions {
+    display: flex;
+    gap: 20px;
+  }
+
+  .discard-btn {
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    border-radius: 20px;
+    padding: 24px 60px;
+    font-size: 28px;
+    font-weight: 800;
+    transition: transform 0.15s;
+  }
+
+  .discard-btn:hover {
+    transform: scale(1.04);
+    background: rgba(255, 255, 255, 0.2);
   }
 
   .capture-btn {

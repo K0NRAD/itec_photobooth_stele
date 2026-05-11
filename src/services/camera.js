@@ -1,76 +1,39 @@
-/**
- * Kamera-Client — kommuniziert mit dem Deno-Backend via REST und WebSocket.
- * @module services/camera
- */
-
-/** @type {WebSocket|null} */
-let ws = null;
-/** @type {Set<(event: object) => void>} */
-const listeners = new Set();
+/** @type {MediaStream|null} */
+let stream = null;
 
 /**
- * Baut WebSocket-Verbindung zum Backend auf.
- * Reconnectet automatisch bei Verbindungsabbruch.
+ * Startet den Webcam-Stream und bindet ihn an ein Video-Element.
+ * @param {HTMLVideoElement} videoEl
+ * @returns {Promise<void>}
  */
-export function connectCamera() {
-  if (ws && ws.readyState === WebSocket.OPEN) return;
-
-  const url = `ws://${location.hostname}:8000/ws`;
-  ws = new WebSocket(url);
-
-  ws.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      listeners.forEach((fn) => fn(data));
-    } catch { /* ignore malformed messages */ }
-  };
-
-  ws.onclose = () => {
-    setTimeout(connectCamera, 2000);
-  };
-
-  ws.onerror = (err) => console.error('[camera-ws] error:', err);
-}
-
-/**
- * Meldet einen Event-Listener an.
- * @param {(event: object) => void} fn
- * @returns {() => void} Deregister-Funktion
- */
-export function onCameraEvent(fn) {
-  listeners.add(fn);
-  return () => listeners.delete(fn);
-}
-
-/**
- * Löst ein Foto aus.
- * @param {string} sessionId
- * @param {number} index
- * @returns {Promise<{success: boolean, photoUrl: string|null, error: string|null}>}
- */
-export async function triggerCapture(sessionId, index) {
-  const res = await fetch('/api/capture', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionId, index }),
+export async function initCamera(videoEl) {
+  stream = await navigator.mediaDevices.getUserMedia({
+    video: { width: { ideal: 1920 }, height: { ideal: 1080 } },
+    audio: false,
   });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Unbekannter Fehler' }));
-    return { success: false, photoUrl: null, error: err.error };
-  }
-
-  const data = await res.json();
-  return { success: true, photoUrl: data.photoUrl, error: null };
+  videoEl.srcObject = stream;
+  await new Promise((resolve) => { videoEl.onloadedmetadata = resolve; });
+  await videoEl.play();
 }
 
 /**
- * Lädt ein Foto vom Backend und gibt eine Blob-URL zurück.
- * @param {string} photoUrl - relativer Pfad, z.B. /api/photos/sessionId/0
+ * Nimmt ein Standbild vom Video-Element auf und gibt eine Blob-URL zurück.
+ * @param {HTMLVideoElement} videoEl
  * @returns {Promise<string>} Object-URL
  */
-export async function fetchPhotoAsBlob(photoUrl) {
-  const res = await fetch(photoUrl);
-  const blob = await res.blob();
+export async function captureFrame(videoEl) {
+  const canvas = document.createElement('canvas');
+  canvas.width = videoEl.videoWidth;
+  canvas.height = videoEl.videoHeight;
+  canvas.getContext('2d').drawImage(videoEl, 0, 0);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
   return URL.createObjectURL(blob);
+}
+
+/**
+ * Stoppt den laufenden Webcam-Stream.
+ */
+export function stopCamera() {
+  stream?.getTracks().forEach((t) => t.stop());
+  stream = null;
 }
