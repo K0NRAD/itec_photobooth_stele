@@ -7,11 +7,12 @@
   import BackgroundPicker from './BackgroundPicker.svelte';
   import CameraPicker from './CameraPicker.svelte';
   import { pb } from '../state/photobooth.svelte.js';
+  import { config } from '../services/config.js';
 
   /** @type {{ onClose: () => void }} */
   let { onClose } = $props();
 
-  const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN || '1234';
+  const ADMIN_PIN = config.ADMIN_PIN;
 
   /** @type {'pin'|'menu'|'background'|'camera'} */
   let view = $state('pin');

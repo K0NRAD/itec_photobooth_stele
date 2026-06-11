@@ -39,10 +39,6 @@ jobs:
         run: |
           npm ci
           npm run build
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_SUPABASE_BUCKET: ${{ secrets.VITE_SUPABASE_BUCKET }}
 
       - uses: actions/setup-python@v5
         with: { python-version: '3.10' }
@@ -104,10 +100,6 @@ jobs:
         run: |
           npm ci
           npm run build
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_SUPABASE_BUCKET: ${{ secrets.VITE_SUPABASE_BUCKET }}
 
       - name: Abhängigkeiten installieren
         run: |

@@ -54,6 +54,7 @@ QR-Code herunter.
 │   ├── services/
 │   │   ├── camera.js                # getUserMedia, Kamera-Auflistung
 │   │   ├── composer.js              # Canvas-Bildkomposition (alle Formate)
+│   │   ├── config.js                # Laufzeit-Konfiguration (siehe unten)
 │   │   ├── speech.js                # Web Speech API Wrapper
 │   │   └── supabase.js              # Upload zu Supabase Storage
 │   ├── state/
@@ -66,7 +67,7 @@ QR-Code herunter.
 ├── system_bridge.py     # Desktop-Wrapper: lokaler HTTP-Server + Chrome-Kiosk
 ├── system_bridge.spec   # PyInstaller-Spec
 ├── requirements.txt     # Python-Abhängigkeiten für den Build
-└── .env                  # Supabase-Konfiguration & Admin-PIN (siehe unten)
+└── .env                  # Zugangsdaten für Entwicklung (siehe "Konfiguration")
 ```
 
 ## Voraussetzungen
@@ -76,9 +77,10 @@ QR-Code herunter.
 - Für die fertige Desktop-App: **Google Chrome** muss auf dem Zielgerät
   installiert sein (`system_bridge.py` startet die App darin im Kiosk-Modus)
 
-## Umgebungsvariablen
+## Konfiguration
 
-In `.env` im Projekt-Root:
+Zugangsdaten (Supabase-URL/-Key/-Bucket, Admin-PIN) werden **nicht** in den
+Build eingebacken, sondern zur Laufzeit aus einer `.env`-Datei gelesen:
 
 ```env
 VITE_SUPABASE_URL=...
@@ -87,6 +89,19 @@ VITE_SUPABASE_BUCKET=photos
 
 VITE_ADMIN_PIN=1234
 ```
+
+- **Entwicklung** (`npm run dev`/`./start.sh`): `.env` im Projekt-Root, wird
+  von Vite automatisch über `import.meta.env` eingelesen.
+- **Desktop-App** (gepackte Executable): `.env` mit denselben Schlüsseln muss
+  **manuell neben der Executable** abgelegt werden, z. B.
+  `release/itec-photobooth/.env`. `system_bridge.py` liest die Datei beim
+  Start ein und stellt die Werte dem Frontend als
+  `window.__RUNTIME_CONFIG__` bereit (`src/services/config.js`). Fehlt die
+  Datei, läuft die App weiter, aber Foto-Upload und Admin-PIN-Prüfung
+  funktionieren nicht wie konfiguriert (Fallback `VITE_ADMIN_PIN=1234`).
+
+Damit landen die Zugangsdaten nicht im (öffentlich herunterladbaren)
+Release-Artefakt, sondern werden separat und pro Gerät bereitgestellt.
 
 ## Entwicklung
 
