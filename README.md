@@ -28,15 +28,14 @@ QR-Code herunter.
 - **QR-Code**: [`qrcode`](https://www.npmjs.com/package/qrcode)
 - **Desktop-Wrapper**: `system_bridge.py` — startet einen lokalen
   `http.server`-Server für den Vite-Build und öffnet ihn in Google Chrome im
-  Kiosk-Modus. Gepackt per [PyInstaller](https://pyinstaller.org) zu einer
-  eigenständigen Executable.
+  Kiosk-Modus. Reines Python (Standardbibliothek, keine Abhängigkeiten),
+  gestartet über `start.sh`/`start.bat`.
 
 ## Projektstruktur
 
 ```
 .
-├── .github/workflows/build.yml   # CI: Frontend-Build + PyInstaller-Pakete
-│                                    für Windows/macOS (Intel+Silicon)/Linux,
+├── .github/workflows/build.yml   # CI: Frontend-Build + Paket-ZIP,
 │                                    GitHub Release bei v*-Tags
 ├── public/
 │   └── favicon.svg
@@ -62,20 +61,21 @@ QR-Code herunter.
 │   ├── App.svelte                   # Haupt-Screens & State-Machine
 │   ├── app.css
 │   └── main.js                      # Einstiegspunkt + JS-Error-Overlay
-├── build.sh             # lokaler Produktions-Build (Vite + PyInstaller)
-├── start.sh             # lokaler Dev-Server (Vite)
+├── build.sh             # lokales Produktions-Paket (Vite-Build + Kopie)
+├── dev.sh               # lokaler Dev-Server (Vite)
+├── start.sh             # Start (macOS/Linux): python3 system_bridge.py
+├── start.bat            # Start (Windows): python system_bridge.py
 ├── system_bridge.py     # Desktop-Wrapper: lokaler HTTP-Server + Chrome-Kiosk
-├── system_bridge.spec   # PyInstaller-Spec
-├── requirements.txt     # Python-Abhängigkeiten für den Build
 └── .env                  # Zugangsdaten für Entwicklung (siehe "Konfiguration")
 ```
 
 ## Voraussetzungen
 
-- [Node.js](https://nodejs.org) 20+
-- Für den Desktop-Build zusätzlich: Python 3.10+
-- Für die fertige Desktop-App: **Google Chrome** muss auf dem Zielgerät
-  installiert sein (`system_bridge.py` startet die App darin im Kiosk-Modus)
+- [Node.js](https://nodejs.org) 20+ (nur für den Build)
+- Für die fertige App auf dem Zielgerät:
+  - **Python 3** (Standardbibliothek genügt, keine zusätzlichen Pakete nötig)
+  - **Google Chrome** (`system_bridge.py` startet die App darin im
+    Kiosk-Modus)
 
 ## Konfiguration
 
@@ -90,12 +90,12 @@ VITE_SUPABASE_BUCKET=photos
 VITE_ADMIN_PIN=1234
 ```
 
-- **Entwicklung** (`npm run dev`/`./start.sh`): `.env` im Projekt-Root, wird
+- **Entwicklung** (`npm run dev`/`./dev.sh`): `.env` im Projekt-Root, wird
   von Vite automatisch über `import.meta.env` eingelesen.
-- **Desktop-App** (gepackte Executable): `.env` mit denselben Schlüsseln muss
-  **manuell neben der Executable** abgelegt werden, z. B.
-  `release/itec-photobooth/.env`. `system_bridge.py` liest die Datei beim
-  Start ein und stellt die Werte dem Frontend als
+- **Desktop-App** (Paket aus `release/itec-photobooth/` bzw. Release-ZIP):
+  `.env` mit denselben Schlüsseln muss **manuell neben `system_bridge.py`**
+  abgelegt werden, z. B. `release/itec-photobooth/.env`. `system_bridge.py`
+  liest die Datei beim Start ein und stellt die Werte dem Frontend als
   `window.__RUNTIME_CONFIG__` bereit (`src/services/config.js`). Fehlt die
   Datei, läuft die App weiter, aber Foto-Upload und Admin-PIN-Prüfung
   funktionieren nicht wie konfiguriert (Fallback `VITE_ADMIN_PIN=1234`).
@@ -106,7 +106,7 @@ Release-Artefakt, sondern werden separat und pro Gerät bereitgestellt.
 ## Entwicklung
 
 ```bash
-./start.sh
+./dev.sh
 # oder
 npm install
 npm run dev
@@ -121,38 +121,34 @@ Secure Context benötigt, funktioniert `localhost` ohne weitere Konfiguration.
 ./build.sh
 ```
 
-Das Script baut das Frontend (`npm run build`), legt ein Python-`.venv` an,
-installiert `requirements.txt` und paketiert `system_bridge.py` per
-PyInstaller zu einer Executable. Ergebnis: `release/itec-photobooth/`.
+Das Script baut das Frontend (`npm run build`) und stellt
+`release/itec-photobooth/` zusammen: `dist/` (Vite-Build), `system_bridge.py`,
+`start.sh` und `start.bat`.
 
-Beim Start öffnet `system_bridge.py` einen lokalen Webserver für den
-Vite-Build und startet Google Chrome im Kiosk-Modus (`--kiosk
+**Auf dem Zielgerät:**
+
+1. Den Ordner `release/itec-photobooth/` (bzw. das Release-ZIP) auf das
+   Zielgerät kopieren.
+2. `.env` mit den Zugangsdaten daneben legen (siehe "Konfiguration").
+3. `start.sh` (macOS/Linux) bzw. `start.bat` (Windows) ausführen — startet
+   `python3 system_bridge.py`.
+
+`system_bridge.py` öffnet einen lokalen Webserver für den Vite-Build und
+startet Google Chrome im Kiosk-Modus (`--kiosk
 --use-fake-ui-for-media-stream`) mit einem eigenen, isolierten
 Chrome-Profil — Kamera-/Mikrofon-Berechtigungen werden darin dauerhaft
 gespeichert.
 
-### macOS: "kann nicht ausgeführt werden" / Gatekeeper
-
-Die heruntergeladenen macOS-Builds sind nur ad-hoc signiert (kein
-Apple-Developer-Account). Beim Entpacken markiert macOS jede Datei im Bundle
-mit einem Quarantäne-Flag, wodurch Gatekeeper für die Executable und alle
-mitgelieferten `.so`/`.dylib`-Dateien einzeln nacheinander Warnungen anzeigt.
-Abhilfe: im Terminal die Quarantäne-Markierung rekursiv entfernen, bevor die
-App gestartet wird:
-
-```bash
-xattr -cr /pfad/zu/itec-photobooth
-```
-
-(`/pfad/zu/itec-photobooth` ist der entpackte Ordner mit der Executable und
-dem `_internal`-Verzeichnis.)
+Vorausgesetzt sind **Python 3** (Standardbibliothek genügt, kein `pip
+install` nötig) und **Google Chrome** auf dem Zielgerät.
 
 ## CI/CD
 
 `.github/workflows/build.yml` baut bei jedem Push auf `main` und bei
-`v*`-Tags das Frontend und paketiert es für **Windows**, **macOS (Intel +
-Apple Silicon)** und **Linux**. Bei Tags wird zusätzlich ein GitHub Release
-mit allen vier ZIP-Artefakten (`itec-photobooth-<Plattform>.zip`) erstellt.
+`v*`-Tags das Frontend und packt `dist/` zusammen mit `system_bridge.py`,
+`start.sh` und `start.bat` zu `itec-photobooth.zip`. Da `system_bridge.py`
+nur die Python-Standardbibliothek nutzt, ist das Paket plattformunabhängig.
+Bei Tags wird zusätzlich ein GitHub Release mit dem ZIP erstellt.
 
 ## Sprachbefehle (Auswahl)
 

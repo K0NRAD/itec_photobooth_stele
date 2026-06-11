@@ -9,15 +9,12 @@ if [ ! -d "node_modules" ]; then
 fi
 npm run build
 
-echo "Setting up Python venv (.venv)..."
-if [ ! -d ".venv" ]; then
-  python3 -m venv .venv
-fi
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-
-echo "Building executable (PyInstaller)..."
-pyinstaller --noconfirm --distpath release system_bridge.spec
+echo "Assembling package..."
+rm -rf release/itec-photobooth
+mkdir -p release/itec-photobooth
+cp -r dist release/itec-photobooth/
+cp system_bridge.py start.sh start.bat release/itec-photobooth/
+chmod +x release/itec-photobooth/start.sh
 
 echo "Done: release/itec-photobooth/"
+echo "Auf dem Zielsystem: .env neben system_bridge.py legen, dann start.sh/start.bat ausführen."

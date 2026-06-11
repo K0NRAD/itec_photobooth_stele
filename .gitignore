@@ -5,11 +5,11 @@ build/
 .vercel/
 .netlify/
 
-# --- Python / PyInstaller (system_bridge) ---
+# --- Python (system_bridge) ---
 __pycache__/
 *.pyc
-.venv/
-venv/
+
+# --- Lokales Build-Paket (build.sh) ---
 release/
 
 # --- Node/Build Tools (falls im Workflow vorhanden) ---
