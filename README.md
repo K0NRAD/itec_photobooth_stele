@@ -116,6 +116,22 @@ Vite-Build und startet Google Chrome im Kiosk-Modus (`--kiosk
 Chrome-Profil — Kamera-/Mikrofon-Berechtigungen werden darin dauerhaft
 gespeichert.
 
+### macOS: "kann nicht ausgeführt werden" / Gatekeeper
+
+Die heruntergeladenen macOS-Builds sind nur ad-hoc signiert (kein
+Apple-Developer-Account). Beim Entpacken markiert macOS jede Datei im Bundle
+mit einem Quarantäne-Flag, wodurch Gatekeeper für die Executable und alle
+mitgelieferten `.so`/`.dylib`-Dateien einzeln nacheinander Warnungen anzeigt.
+Abhilfe: im Terminal die Quarantäne-Markierung rekursiv entfernen, bevor die
+App gestartet wird:
+
+```bash
+xattr -cr /pfad/zu/itec-photobooth
+```
+
+(`/pfad/zu/itec-photobooth` ist der entpackte Ordner mit der Executable und
+dem `_internal`-Verzeichnis.)
+
 ## CI/CD
 
 `.github/workflows/build.yml` baut bei jedem Push auf `main` und bei

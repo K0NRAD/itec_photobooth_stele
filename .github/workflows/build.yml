@@ -64,6 +64,15 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: chmod +x release/${{ env.EXECUTABLE_NAME }}/${{ env.EXECUTABLE_NAME }} || true
 
+      - name: Ad-hoc Code-Signierung (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          find "release/${{ env.EXECUTABLE_NAME }}" -type f \( -perm -111 -o -name "*.so" -o -name "*.dylib" \) -print0 |
+            while IFS= read -r -d '' f; do
+              codesign --force --sign - --timestamp=none "$f" 2>/dev/null || true
+            done
+          codesign --force --sign - --timestamp=none "release/${{ env.EXECUTABLE_NAME }}/${{ env.EXECUTABLE_NAME }}"
+
       - name: ZIP erstellen
         run: python -c "import shutil; shutil.make_archive('${{ env.EXECUTABLE_NAME }}-${{ matrix.artifact_name }}', 'zip', 'release/${{ env.EXECUTABLE_NAME }}')"
 
