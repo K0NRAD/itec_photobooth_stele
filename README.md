@@ -1,43 +1,139 @@
-# Svelte + Vite
+# Photobooth Stele
 
-This template should help get you started developing with Svelte in Vite.
+Touch- und sprachgesteuerte Photobooth-Anwendung für eine Stele im Portrait-Format
+(1080×1920). Aufnahmen werden über die Webcam erstellt, lokal zu einem Ausgabebild
+zusammengesetzt und in Supabase Storage hochgeladen — Gäste laden ihr Foto per
+QR-Code herunter.
 
-## Recommended IDE Setup
+## Features
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+- **Vier Ausgabeformate**: Fotostreifen (3 Fotos), Collage (4 Fotos), Polaroid
+  (1 Foto), Photo Grid (4 Fotos, 2×2)
+- **Sprachsteuerung** (Web Speech API, `de-DE`) für den kompletten Ablauf:
+  Start, Formatwahl, Auslösen, Speichern, Wiederholen, Admin-Zugang
+- **Touch-Bedienung** als Alternative/Ergänzung zur Sprachsteuerung
+- **Admin-Panel** (PIN-geschützt, Zugang über 5s Druck auf untere linke Ecke
+  oder Sprachbefehl „admin“):
+  - Hintergrund anpassen (Farbe oder Bild)
+  - Kamera auswählen (bei mehreren Video-Eingabegeräten)
+- **QR-Code** zur Ausgabe-URL nach dem Upload
 
-## Need an official Svelte framework?
+## Tech-Stack
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+- **Frontend**: [Svelte 5](https://svelte.dev) (Runes, kein SvelteKit), [Vite](https://vitejs.dev), JavaScript + JSDoc (kein TypeScript)
+- **Kamera**: `navigator.mediaDevices.getUserMedia` (UVC-Webcam, z. B. eine
+  Sony Alpha 7 im Webcam-Modus)
+- **Bildkomposition**: Canvas API (`src/services/composer.js`)
+- **Storage**: [Supabase](https://supabase.com) Storage (`@supabase/supabase-js`)
+- **QR-Code**: [`qrcode`](https://www.npmjs.com/package/qrcode)
+- **Desktop-Wrapper**: `system_bridge.py` — startet einen lokalen
+  `http.server`-Server für den Vite-Build und öffnet ihn in Google Chrome im
+  Kiosk-Modus. Gepackt per [PyInstaller](https://pyinstaller.org) zu einer
+  eigenständigen Executable.
 
-## Technical considerations
+## Projektstruktur
 
-**Why use this over SvelteKit?**
-
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
-
-This template contains as little as possible to get started with Vite + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
-
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
-
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `checkJs` in the JS template?**
-
-It is likely that most cases of changing variable types in runtime are likely to be accidental, rather than deliberate. This provides advanced typechecking out of the box. Should you like to take advantage of the dynamically-typed nature of JavaScript, it is trivial to change the configuration.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/sveltejs/svelte-hmr/tree/master/packages/svelte-hmr#preservation-of-local-state).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```js
-// store.js
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
 ```
+.
+├── .github/workflows/build.yml   # CI: Frontend-Build + PyInstaller-Pakete
+│                                    für Windows/macOS (Intel+Silicon)/Linux,
+│                                    GitHub Release bei v*-Tags
+├── public/
+│   └── favicon.svg
+├── src/
+│   ├── components/
+│   │   ├── AdminPanel.svelte       # PIN-geschützte Einstellungen
+│   │   ├── BackgroundPicker.svelte # Hintergrundauswahl (Farbe/Bild)
+│   │   ├── CameraPicker.svelte     # Kameraauswahl mit Live-Vorschau
+│   │   ├── Countdown.svelte        # Countdown vor der Auslösung
+│   │   ├── FormatSelector.svelte   # Auswahl des Ausgabeformats
+│   │   ├── QRCode.svelte           # QR-Code zur Ausgabe-URL
+│   │   └── VoiceControl.svelte     # Mikrofon-Status & Sprachsteuerung
+│   ├── lib/
+│   │   └── qrcode.js                # QR-Code-Rendering (Canvas)
+│   ├── services/
+│   │   ├── camera.js                # getUserMedia, Kamera-Auflistung
+│   │   ├── composer.js              # Canvas-Bildkomposition (alle Formate)
+│   │   ├── speech.js                # Web Speech API Wrapper
+│   │   └── supabase.js              # Upload zu Supabase Storage
+│   ├── state/
+│   │   └── photobooth.svelte.js     # globaler App-State (Svelte 5 Runes)
+│   ├── App.svelte                   # Haupt-Screens & State-Machine
+│   ├── app.css
+│   └── main.js                      # Einstiegspunkt + JS-Error-Overlay
+├── build.sh             # lokaler Produktions-Build (Vite + PyInstaller)
+├── start.sh             # lokaler Dev-Server (Vite)
+├── system_bridge.py     # Desktop-Wrapper: lokaler HTTP-Server + Chrome-Kiosk
+├── system_bridge.spec   # PyInstaller-Spec
+├── requirements.txt     # Python-Abhängigkeiten für den Build
+└── .env                  # Supabase-Konfiguration & Admin-PIN (siehe unten)
+```
+
+## Voraussetzungen
+
+- [Node.js](https://nodejs.org) 20+
+- Für den Desktop-Build zusätzlich: Python 3.10+
+- Für die fertige Desktop-App: **Google Chrome** muss auf dem Zielgerät
+  installiert sein (`system_bridge.py` startet die App darin im Kiosk-Modus)
+
+## Umgebungsvariablen
+
+In `.env` im Projekt-Root:
+
+```env
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+VITE_SUPABASE_BUCKET=photos
+
+VITE_ADMIN_PIN=1234
+```
+
+## Entwicklung
+
+```bash
+./start.sh
+# oder
+npm install
+npm run dev
+```
+
+Die App läuft dann unter `http://localhost:5173`. Da `getUserMedia` einen
+Secure Context benötigt, funktioniert `localhost` ohne weitere Konfiguration.
+
+## Produktions-Build (Desktop-App)
+
+```bash
+./build.sh
+```
+
+Das Script baut das Frontend (`npm run build`), legt ein Python-`.venv` an,
+installiert `requirements.txt` und paketiert `system_bridge.py` per
+PyInstaller zu einer Executable. Ergebnis: `release/itec-photobooth/`.
+
+Beim Start öffnet `system_bridge.py` einen lokalen Webserver für den
+Vite-Build und startet Google Chrome im Kiosk-Modus (`--kiosk
+--use-fake-ui-for-media-stream`) mit einem eigenen, isolierten
+Chrome-Profil — Kamera-/Mikrofon-Berechtigungen werden darin dauerhaft
+gespeichert.
+
+## CI/CD
+
+`.github/workflows/build.yml` baut bei jedem Push auf `main` und bei
+`v*`-Tags das Frontend und paketiert es für **Windows**, **macOS (Intel +
+Apple Silicon)** und **Linux**. Bei Tags wird zusätzlich ein GitHub Release
+mit allen vier ZIP-Artefakten (`itec-photobooth-<Plattform>.zip`) erstellt.
+
+## Sprachbefehle (Auswahl)
+
+| Befehl | Beispiele |
+| --- | --- |
+| Start | „Start“, „los“, „beginnen“ |
+| Format wählen | „Streifen“, „Collage“, „Polaroid“, „Grid“ |
+| Auslösen | „Foto“, „Cheese“, „jetzt“ |
+| Bestätigen/Weiter | „weiter“, „fertig“, „ok“ |
+| Speichern | „speichern“, „hochladen“ |
+| Wiederholen | „nochmal“, „neu“ |
+| Admin-Zugang | „admin“, „einstellungen“ |
+
+Die vollständige Liste der erkannten Begriffe steht in
+`src/services/speech.js`.

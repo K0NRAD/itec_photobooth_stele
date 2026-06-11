@@ -5,6 +5,7 @@
    * @module components/AdminPanel
    */
   import BackgroundPicker from './BackgroundPicker.svelte';
+  import CameraPicker from './CameraPicker.svelte';
   import { pb } from '../state/photobooth.svelte.js';
 
   /** @type {{ onClose: () => void }} */
@@ -12,7 +13,7 @@
 
   const ADMIN_PIN = import.meta.env.VITE_ADMIN_PIN || '1234';
 
-  /** @type {'pin'|'menu'|'background'} */
+  /** @type {'pin'|'menu'|'background'|'camera'} */
   let view = $state('pin');
   let pinInput = $state('');
   let pinError = $state(false);
@@ -56,11 +57,17 @@
         <button onclick={() => (view = 'background')}>
           🎨 Hintergrund anpassen
         </button>
+        <button onclick={() => (view = 'camera')}>
+          📷 Kamera auswählen
+        </button>
       </div>
       <button class="close-btn" onclick={onClose}>Schließen</button>
 
     {:else if view === 'background'}
       <BackgroundPicker background={pb.background} onDone={() => (view = 'menu')} />
+
+    {:else if view === 'camera'}
+      <CameraPicker selectedId={pb.selectedCameraId} onDone={() => (view = 'menu')} />
     {/if}
   </div>
 </div>

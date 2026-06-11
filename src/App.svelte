@@ -4,10 +4,6 @@
   import FormatSelector from './components/FormatSelector.svelte';
   import QRCode from './components/QRCode.svelte';
   import AdminPanel from './components/AdminPanel.svelte';
-  import PhotoStripe from './components/formats/PhotoStripe.svelte';
-  import PhotoCollage from './components/formats/PhotoCollage.svelte';
-  import PolaroidPhoto from './components/formats/PolaroidPhoto.svelte';
-  import PhotoGrid from './components/formats/PhotoGrid.svelte';
 
   import {
     pb, derived,
@@ -34,7 +30,7 @@
 
   $effect(() => {
     if (pb.currentState !== 'capturing' || !videoEl) return;
-    initCamera(videoEl).catch((err) => {
+    initCamera(videoEl, pb.selectedCameraId).catch((err) => {
       statusMessage = `Kamera-Fehler: ${err.message}`;
     });
     return () => stopCamera();
@@ -190,7 +186,7 @@
             <p class="status">{statusMessage}</p>
           {/if}
           {#if !showCountdown && !capturing}
-            <button class="shutter-btn" onclick={triggerNextPhoto}>
+            <button class="shutter-btn" onclick={triggerNextPhoto} aria-label="Foto aufnehmen">
               <span class="shutter-inner"></span>
             </button>
             <p class="hint">Oder sage <strong>"Foto"</strong></p>
@@ -420,18 +416,23 @@
   }
 
   .preview-container {
+    flex: 1;
+    min-height: 0;
     width: 100%;
-    max-width: 420px;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .preview-image {
-    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
     height: auto;
-    display: block;
+    object-fit: contain;
+    border-radius: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
   }
 
   .preview-actions {
@@ -464,12 +465,7 @@
     transition: transform 0.15s;
   }
 
-  .capture-btn:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
-  .capture-btn:not(:disabled):hover {
+  .capture-btn:hover {
     transform: scale(1.04);
   }
 

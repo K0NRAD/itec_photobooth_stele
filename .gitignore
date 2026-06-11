@@ -1,15 +1,16 @@
-# --- Deno ---
-.deno/
-deno.lock
-# Falls du Vendor-Abhängigkeiten lokal speicherst:
-vendor/
-
 # --- Svelte / Vite / Frontend ---
 .svelte-kit/
 dist/
 build/
 .vercel/
 .netlify/
+
+# --- Python / PyInstaller (system_bridge) ---
+__pycache__/
+*.pyc
+.venv/
+venv/
+release/
 
 # --- Node/Build Tools (falls im Workflow vorhanden) ---
 node_modules/

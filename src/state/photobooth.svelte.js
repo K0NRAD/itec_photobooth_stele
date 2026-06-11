@@ -23,6 +23,7 @@ export const PHOTO_COUNT = {
  *   selectedFormat: PhotoFormat,
  *   photos: string[],
  *   background: Background,
+ *   selectedCameraId: string|null,
  *   resultUrl: string|null,
  *   sessionId: string,
  * }}
@@ -32,6 +33,7 @@ export const pb = $state({
   selectedFormat: /** @type {PhotoFormat} */ ('stripe'),
   photos: /** @type {string[]} */ ([]),
   background: loadBackground(),
+  selectedCameraId: loadCameraId(),
   resultUrl: /** @type {string|null} */ (null),
   sessionId: '',
 });
@@ -39,7 +41,6 @@ export const pb = $state({
 /** Abgeleitete Werte als Getter-Objekt (reaktiv durch $state-Zugriff) */
 export const derived = {
   get requiredPhotos() { return PHOTO_COUNT[pb.selectedFormat]; },
-  get photoIndex() { return pb.photos.length; },
   get allPhotosTaken() { return pb.photos.length >= PHOTO_COUNT[pb.selectedFormat]; },
 };
 
@@ -109,4 +110,27 @@ function loadBackground() {
     if (raw) return JSON.parse(raw);
   } catch { /* ignore */ }
   return { type: 'color', value: '#1a1a2e' };
+}
+
+/**
+ * Setzt die zu verwendende Kamera und speichert sie persistent.
+ * @param {string|null} deviceId
+ */
+export function setCamera(deviceId) {
+  pb.selectedCameraId = deviceId;
+  try {
+    if (deviceId) localStorage.setItem('pb_camera_id', deviceId);
+    else localStorage.removeItem('pb_camera_id');
+  } catch { /* ignore */ }
+}
+
+/**
+ * @returns {string|null}
+ */
+function loadCameraId() {
+  try {
+    return localStorage.getItem('pb_camera_id');
+  } catch {
+    return null;
+  }
 }
