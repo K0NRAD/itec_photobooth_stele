@@ -15,7 +15,7 @@ const COMMANDS = {
   capture: ['foto', 'cheese', 'aufnehmen', 'jetzt', 'schießen', 'klick'],
   next:    ['weiter', 'fertig', 'nächste', 'done', 'ok', 'okay'],
   save:    ['speichern', 'hochladen', 'ja', 'okay', 'weiter', 'done'],
-  restart: ['nochmal', 'wiederholen', 'neustart', 'zurück', 'neu'],
+  restart: ['nochmal', 'wiederholen', 'neustart', 'zurück', 'neu', 'abbrechen'],
   admin:   ['admin', 'einstellungen'],
 };
 

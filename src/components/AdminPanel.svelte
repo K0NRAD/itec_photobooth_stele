@@ -4,13 +4,29 @@
    * Zugang: 5s auf untere linke Ecke drücken oder Sprachbefehl "admin".
    * @module components/AdminPanel
    */
+  import { onMount, onDestroy, untrack } from 'svelte';
   import BackgroundPicker from './BackgroundPicker.svelte';
   import CameraPicker from './CameraPicker.svelte';
   import { pb } from '../state/photobooth.svelte.js';
   import { config } from '../services/config.js';
 
-  /** @type {{ onClose: () => void }} */
-  let { onClose } = $props();
+  /** @type {{ onClose: () => void, timeout?: number }} */
+  let { onClose, timeout = 30 } = $props();
+
+  let remaining = $state(untrack(() => timeout));
+  let interval = null;
+
+  onMount(() => {
+    interval = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(interval);
+        onClose();
+      }
+    }, 1000);
+  });
+
+  onDestroy(() => clearInterval(interval));
 
   const ADMIN_PIN = config.ADMIN_PIN;
 
@@ -70,6 +86,11 @@
     {:else if view === 'camera'}
       <CameraPicker selectedId={pb.selectedCameraId} onDone={() => (view = 'menu')} />
     {/if}
+    
+    <div class="timer-bar">
+      <div class="timer-fill" style="width: {(remaining / timeout) * 100}%"></div>
+    </div>
+    <p class="timer-text">Schließt automatisch in {remaining}s</p>
   </div>
 </div>
 
@@ -169,5 +190,27 @@
     background: transparent;
     border-color: rgba(255, 255, 255, 0.2);
     margin-top: 8px;
+  }
+
+  .timer-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .timer-fill {
+    height: 100%;
+    background: #f472b6;
+    border-radius: 2px;
+    transition: width 1s linear;
+  }
+
+  .timer-text {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.35);
+    margin: 0;
   }
 </style>

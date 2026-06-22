@@ -49,9 +49,10 @@
         handleFormatSelect(command);
       } else if (command === 'next') {
         handleFormatSelect(pb.selectedFormat);
-      }
+      } else if (command === 'restart') reset();
     } else if (pb.currentState === 'capturing') {
       if (command === 'capture' && !capturing) triggerNextPhoto();
+      else if (command === 'restart') reset();
     } else if (pb.currentState === 'preview') {
       if (command === 'save') doUpload();
       if (command === 'restart') resetPreview();
@@ -152,7 +153,7 @@
     <div class="screen center">
       <div class="logo">📸</div>
       <h1>Photobooth</h1>
-      <p class="instruction">Sage <strong>"Start"</strong> oder tippe zum Beginnen</p>
+      <p class="instruction">Sage <strong>"Start"</strong>, <strong>"Starten"</strong> oder tippe zum Beginnen</p>
       <button class="start-btn" onclick={() => transition('format_select')}>
         Start
       </button>
@@ -163,6 +164,7 @@
       <FormatSelector
         selected={pb.selectedFormat}
         onSelect={handleFormatSelect}
+        onClose={reset}
       />
     </div>
 
@@ -189,7 +191,7 @@
             <button class="shutter-btn" onclick={triggerNextPhoto} aria-label="Foto aufnehmen">
               <span class="shutter-inner"></span>
             </button>
-            <p class="hint">Oder sage <strong>"Foto"</strong></p>
+            <p class="hint">Oder sage <strong>"Foto"</strong>, <strong>"Aufnehmen"</strong></p>
           {/if}
         </div>
       </div>

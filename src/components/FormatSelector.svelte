@@ -3,9 +3,25 @@
    * FormatSelector — Auswahl des Ausgabeformats per Touch oder Sprache.
    * @module components/FormatSelector
    */
+  import { onMount, onDestroy, untrack } from 'svelte';
 
-  /** @type {{ selected: string, onSelect: (format: string) => void }} */
-  let { selected, onSelect } = $props();
+  /** @type {{ selected: string, onSelect: (format: string) => void, timeout?: number, onClose?: () => void }} */
+  let { selected, onSelect, timeout = 120, onClose } = $props();
+
+  let remaining = $state(untrack(() => timeout));
+  let interval = null;
+
+  onMount(() => {
+    interval = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(interval);
+        onClose?.();
+      }
+    }, 1000);
+  });
+
+  onDestroy(() => clearInterval(interval));
 
   const formats = [
     {
@@ -42,6 +58,11 @@
 <div class="format-selector">
   <h2>Format wählen</h2>
   <p class="hint">Tippe oder sage den Namen</p>
+
+  <div class="timer-bar">
+    <div class="timer-fill" style="width: {(remaining / timeout) * 100}%"></div>
+  </div>
+  <p class="timer-text">Schließt automatisch in {remaining}s</p>
 
   <div class="formats">
     {#each formats as fmt}
@@ -227,5 +248,26 @@
   .preview-grid > div {
     background: rgba(255, 255, 255, 0.25);
     border-radius: 3px;
+  }
+
+  .timer-bar {
+    width: 400px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .timer-fill {
+    height: 100%;
+    background: #f472b6;
+    border-radius: 2px;
+    transition: width 1s linear;
+  }
+
+  .timer-text {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0;
   }
 </style>
