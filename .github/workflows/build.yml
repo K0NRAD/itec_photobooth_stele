@@ -33,7 +33,7 @@ jobs:
         run: |
           mkdir -p release/${{ env.PACKAGE_NAME }}
           cp -r dist release/${{ env.PACKAGE_NAME }}/
-          cp system_bridge.py start.sh start.bat release/${{ env.PACKAGE_NAME }}/
+          cp system_bridge.py start.sh release/${{ env.PACKAGE_NAME }}/
           chmod +x release/${{ env.PACKAGE_NAME }}/start.sh
 
       - name: ZIP erstellen
