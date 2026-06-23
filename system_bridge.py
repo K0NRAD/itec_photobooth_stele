@@ -174,6 +174,9 @@ def main():
         '--disable-infobars',
         '--disable-session-crashed-bubble',
         '--use-fake-ui-for-media-stream',
+        '--disable-save-password-bubble',
+        '--password-store=basic',
+        '--disable-features=Translate,TranslateUI',
         f'--user-data-dir={profile_dir}',
     ])
 
