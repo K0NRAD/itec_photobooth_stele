@@ -26,7 +26,7 @@
 
   const progress = $derived(remaining / seconds);
   const circumference = 2 * Math.PI * 90;
-  const dashOffset = $derived(circumference - (progress / 100) * circumference);
+  const dashOffset = $derived(progress * circumference);
 </script>
 
 <div class="countdown-container">
@@ -57,7 +57,7 @@
   .countdown-ring {
     position: absolute;
     inset: 0;
-    transform: rotate(90deg);
+    transform: rotate(-90deg);
   }
 
   .ring-bg {
