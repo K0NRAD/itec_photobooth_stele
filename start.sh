@@ -16,6 +16,6 @@ trap 'kill "$CAFFEINATE_PID" "$BRIDGE_PID" 2>/dev/null' EXIT
 # Bildschirmauflösung auf dem externen Monitor setzen
 echo "MacBook Deckel schliessen..."
 sleep 4
-#displayplacer "id:F8EDD3F5-AC68-87A6-CF27-815DCBEABE12 res:1080x1920 hz:30 color_depth:8 enabled:true scaling:on origin:(1680,0) degree:90"
+displayplacer "id:F8EDD3F5-AC68-87A6-CF27-815DCBEABE12 res:1080x1920 hz:30 color_depth:8 enabled:true scaling:on origin:(1680,0) degree:90"
 
 wait $BRIDGE_PID
