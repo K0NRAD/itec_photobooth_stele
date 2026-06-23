@@ -152,6 +152,7 @@ def main():
 
     port = start_local_server(dist_path, runtime_config)
     url = f'http://127.0.0.1:{port}/'
+    print(url)
 
     try:
         chrome_path = find_chrome()
@@ -163,7 +164,7 @@ def main():
     # Eigenes Profil, damit die Kiosk-Instanz unabhängig von einem evtl.
     # bereits laufenden Chrome des Benutzers startet und Berechtigungen
     # (Kamera/Mikrofon) dauerhaft für diese App gespeichert werden.
-    profile_dir = os.path.join(tempfile.gettempdir(), 'itec-photobooth-chrome-profile')
+    profile_dir = os.path.join(tempfile.gettempdir(), 'itec-photobooth-chrome-v2')
 
     subprocess.run([
         chrome_path,
@@ -174,9 +175,7 @@ def main():
         '--disable-infobars',
         '--disable-session-crashed-bubble',
         '--use-fake-ui-for-media-stream',
-        '--disable-save-password-bubble',
-        '--password-store=basic',
-        '--disable-features=Translate,TranslateUI',
+        '--disable-features=Translate',
         f'--user-data-dir={profile_dir}',
     ])
 

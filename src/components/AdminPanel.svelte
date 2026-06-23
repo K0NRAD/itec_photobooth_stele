@@ -52,7 +52,7 @@
       <h3>Admin-Zugang</h3>
       <p>PIN eingeben</p>
       <input
-        type="password"
+        type="text"
         inputmode="numeric"
         maxlength="6"
         bind:value={pinInput}
@@ -143,6 +143,9 @@
     width: 240px;
   }
 
+  input[type="text"]{
+    -webkit-text-security: disc;
+  }
   input.error {
     border-color: #ef4444;
   }
