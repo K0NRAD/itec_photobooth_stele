@@ -3,13 +3,16 @@
    * Countdown — zeigt visuellen Rückwärtszähler vor der Auslösung.
    * @module components/Countdown
    */
-  import { onMount, onDestroy, untrack } from "svelte";
+  import { onMount, onDestroy } from "svelte";
 
   /** @type {{ seconds: number, onComplete: () => void }} */
   let { seconds = 3, onComplete } = $props();
 
-  let remaining = $state(untrack(() => seconds));
+  // Startet einen über `seconds`, damit der Ring beim ersten Render leer ist.
+  // onMount setzt ihn auf `seconds` → CSS-Transition animiert von leer auf 1/3.
+  let remaining = $state(seconds + 1);
   let interval = null;
+  let completeTimeout = null;
 
   onMount(() => {
     remaining = seconds;
@@ -17,16 +20,21 @@
       remaining -= 1;
       if (remaining <= 0) {
         clearInterval(interval);
-        onComplete();
+        interval = null;
+        completeTimeout = setTimeout(() => onComplete(), 800);
       }
     }, 1000);
   });
 
-  onDestroy(() => clearInterval(interval));
+  onDestroy(() => {
+    clearInterval(interval);
+    clearTimeout(completeTimeout);
+  });
 
-  const progress = $derived(remaining / seconds);
   const circumference = 2 * Math.PI * 90;
-  const dashOffset = $derived(progress * circumference);
+  // 4 Schritte (3→2→1→0): Ring füllt sich je Sekunde um 1/4
+  // remaining=4(init)→leer, 3→1/4, 2→2/4, 1→3/4, 0→voll
+  const dashOffset = $derived((remaining / (seconds + 1)) * circumference);
 </script>
 
 <div class="countdown-container">
@@ -41,7 +49,7 @@
       stroke-dashoffset={dashOffset}
     />
   </svg>
-  <span class="number">{remaining}</span>
+  <span class="number">{remaining <= seconds ? remaining : ''}</span>
 </div>
 
 <style>

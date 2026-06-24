@@ -28,6 +28,23 @@
 
   let adminPressTimer = null;
 
+  const PREVIEW_TIMEOUT = 30;
+  let previewRemaining = $state(PREVIEW_TIMEOUT);
+  let previewInterval = null;
+
+  $effect(() => {
+    if (pb.currentState !== 'preview') return;
+    previewRemaining = PREVIEW_TIMEOUT;
+    previewInterval = setInterval(() => {
+      previewRemaining -= 1;
+      if (previewRemaining <= 0) {
+        clearInterval(previewInterval);
+        resetPreview();
+      }
+    }, 1000);
+    return () => clearInterval(previewInterval);
+  });
+
   $effect(() => {
     if (pb.currentState !== 'capturing' || !videoEl) return;
     initCamera(videoEl, pb.selectedCameraId).catch((err) => {
@@ -153,9 +170,9 @@
     <div class="screen center">
       <div class="logo">📸</div>
       <h1>Photobooth</h1>
-      <p class="instruction">Sage <strong>"Start"</strong>, <strong>"Starten"</strong> oder tippe zum Beginnen</p>
+      <p class="instruction">Sage <strong>"Starten"</strong> oder tippe zum Beginnen</p>
       <button class="start-btn" onclick={() => transition('format_select')}>
-        Start
+        Starten
       </button>
     </div>
 
@@ -191,7 +208,7 @@
             <button class="shutter-btn" onclick={triggerNextPhoto} aria-label="Foto aufnehmen">
               <span class="shutter-inner"></span>
             </button>
-            <p class="hint">Oder sage <strong>"Foto"</strong>, <strong>"Aufnehmen"</strong></p>
+            <p class="hint">Oder sage <strong>"Aufnehmen"</strong></p>
           {/if}
         </div>
       </div>
@@ -214,10 +231,19 @@
           Speichern
         </button>
         <button class="discard-btn" onclick={resetPreview}>
-          Nochmal
+          Abbrechen
         </button>
       </div>
-      <p class="hint">Sage <strong>"Speichern"</strong> oder <strong>"Nochmal"</strong></p>
+      <div class="preview-timeout">
+        <div class="preview-timer-bar">
+          <div
+            class="preview-timer-fill"
+            style="width: {(previewRemaining / PREVIEW_TIMEOUT) * 100}%"
+          ></div>
+        </div>
+        <p class="preview-timer-text">Kehrt automatisch zurück in {previewRemaining}s</p>
+      </div>
+      <p class="hint">Sage <strong>"Speichern"</strong> oder <strong>"Abbrechen"</strong></p>
     </div>
 
   {:else if pb.currentState === 'result'}
@@ -469,6 +495,36 @@
 
   .capture-btn:hover {
     transform: scale(1.04);
+  }
+
+  .preview-timeout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .preview-timer-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .preview-timer-fill {
+    height: 100%;
+    background: #f472b6;
+    border-radius: 3px;
+    transition: width 1s linear;
+  }
+
+  .preview-timer-text {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0;
   }
 
   .hint {

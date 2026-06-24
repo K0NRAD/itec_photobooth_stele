@@ -46,6 +46,7 @@
   <p class="timer-text">Schließt automatisch in {remaining}s</p>
 
   <button class="close-btn" onclick={onClose}>✕ Schließen</button>
+  <p class="hint">Oder sage <strong>"Abbrechen"</strong></p>
 </div>
 
 <style>
@@ -123,5 +124,14 @@
 
   .close-btn:hover {
     background: rgba(255, 255, 255, 0.2);
+  }
+
+  .hint {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .hint strong {
+    color: #f472b6;
   }
 </style>
