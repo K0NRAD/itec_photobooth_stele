@@ -45,7 +45,7 @@
   </div>
   <p class="timer-text">Schließt automatisch in {remaining}s</p>
 
-  <button class="close-btn" onclick={onClose}>✕ Schließen</button>
+  <button class="close-btn" onclick={onClose}>Abbrechen</button>
   <p class="hint">Oder sage <strong>"Abbrechen"</strong></p>
 </div>
 

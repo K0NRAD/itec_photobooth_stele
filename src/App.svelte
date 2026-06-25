@@ -370,6 +370,7 @@
     object-fit: contain;
     transform: scaleX(-1);
     background: #000;
+    padding: 0 20px 0 20px;
   }
 
   .capturing-overlay {
