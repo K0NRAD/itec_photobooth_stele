@@ -7,6 +7,7 @@
   import { onMount, onDestroy, untrack } from 'svelte';
   import BackgroundPicker from './BackgroundPicker.svelte';
   import CameraPicker from './CameraPicker.svelte';
+  import CaptionPicker from './CaptionPicker.svelte';
   import { pb } from '../state/photobooth.svelte.js';
   import { config } from '../services/config.js';
 
@@ -30,13 +31,16 @@
 
   const ADMIN_PIN = config.ADMIN_PIN;
 
-  /** @type {'pin'|'menu'|'background'|'camera'} */
+  /** @type {'pin'|'menu'|'background'|'camera'|'caption'} */
   let view = $state('pin');
   let pinInput = $state('');
   let pinError = $state(false);
 
   function checkPin() {
     if (pinInput === ADMIN_PIN) {
+      // Nach erfolgreichem Login greift der Auto-Close-Timeout nicht mehr —
+      // er dient nur der Absicherung des unbeaufsichtigten Login-Screens.
+      clearInterval(interval);
       view = 'menu';
       pinError = false;
     } else {
@@ -77,6 +81,9 @@
         <button onclick={() => (view = 'camera')}>
           📷 Kamera auswählen
         </button>
+        <button onclick={() => (view = 'caption')}>
+          ✏️ Foto-Text bearbeiten
+        </button>
       </div>
       <button class="close-btn" onclick={onClose}>Schließen</button>
 
@@ -85,12 +92,17 @@
 
     {:else if view === 'camera'}
       <CameraPicker selectedId={pb.selectedCameraId} onDone={() => (view = 'menu')} />
+
+    {:else if view === 'caption'}
+      <CaptionPicker caption={pb.caption} onDone={() => (view = 'menu')} />
     {/if}
     
-    <div class="timer-bar">
-      <div class="timer-fill" style="width: {(remaining / timeout) * 100}%"></div>
-    </div>
-    <p class="timer-text">Schließt automatisch in {remaining}s</p>
+    {#if view === 'pin'}
+      <div class="timer-bar">
+        <div class="timer-fill" style="width: {(remaining / timeout) * 100}%"></div>
+      </div>
+      <p class="timer-text">Schließt automatisch in {remaining}s</p>
+    {/if}
   </div>
 </div>
 

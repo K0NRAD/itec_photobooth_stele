@@ -16,6 +16,9 @@ QR-Code herunter.
   oder Sprachbefehl „admin“):
   - Hintergrund anpassen (Farbe oder Bild)
   - Kamera auswählen (bei mehreren Video-Eingabegeräten)
+  - Foto-Text bearbeiten — freie Beschriftung, die auf **jedem** Ausgabebild
+    unten in einem weißen Streifen erscheint (Standard: „ITEC - Schwarz
+    Digits“)
 - **QR-Code** zur Ausgabe-URL nach dem Upload
 
 ## Tech-Stack
@@ -29,7 +32,7 @@ QR-Code herunter.
 - **Desktop-Wrapper**: `system_bridge.py` — startet einen lokalen
   `http.server`-Server für den Vite-Build und öffnet ihn in Google Chrome im
   Kiosk-Modus. Reines Python (Standardbibliothek, keine Abhängigkeiten),
-  gestartet über `start.sh`/`start.bat`.
+  gestartet über `start.sh` (macOS/Linux).
 
 ## Projektstruktur
 
@@ -44,6 +47,7 @@ QR-Code herunter.
 │   │   ├── AdminPanel.svelte       # PIN-geschützte Einstellungen
 │   │   ├── BackgroundPicker.svelte # Hintergrundauswahl (Farbe/Bild)
 │   │   ├── CameraPicker.svelte     # Kameraauswahl mit Live-Vorschau
+│   │   ├── CaptionPicker.svelte    # Foto-Text (Beschriftung auf jedem Bild)
 │   │   ├── Countdown.svelte        # Countdown vor der Auslösung
 │   │   ├── FormatSelector.svelte   # Auswahl des Ausgabeformats
 │   │   ├── QRCode.svelte           # QR-Code zur Ausgabe-URL
@@ -64,7 +68,6 @@ QR-Code herunter.
 ├── build.sh             # lokales Produktions-Paket (Vite-Build + Kopie)
 ├── dev.sh               # lokaler Dev-Server (Vite)
 ├── start.sh             # Start (macOS/Linux): python3 system_bridge.py
-├── start.bat            # Start (Windows): python system_bridge.py
 ├── system_bridge.py     # Desktop-Wrapper: lokaler HTTP-Server + Chrome-Kiosk
 └── .env                  # Zugangsdaten für Entwicklung (siehe "Konfiguration")
 ```
@@ -122,16 +125,15 @@ Secure Context benötigt, funktioniert `localhost` ohne weitere Konfiguration.
 ```
 
 Das Script baut das Frontend (`npm run build`) und stellt
-`release/itec-photobooth/` zusammen: `dist/` (Vite-Build), `system_bridge.py`,
-`start.sh` und `start.bat`.
+`release/itec-photobooth/` zusammen: `dist/` (Vite-Build), `system_bridge.py`
+und `start.sh`.
 
 **Auf dem Zielgerät:**
 
 1. Den Ordner `release/itec-photobooth/` (bzw. das Release-ZIP) auf das
    Zielgerät kopieren.
 2. `.env` mit den Zugangsdaten daneben legen (siehe "Konfiguration").
-3. `start.sh` (macOS/Linux) bzw. `start.bat` (Windows) ausführen — startet
-   `python3 system_bridge.py`.
+3. `start.sh` (macOS/Linux) ausführen — startet `python3 system_bridge.py`.
 
 `system_bridge.py` öffnet einen lokalen Webserver für den Vite-Build und
 startet Google Chrome im Kiosk-Modus (`--kiosk
@@ -145,8 +147,8 @@ install` nötig) und **Google Chrome** auf dem Zielgerät.
 ## CI/CD
 
 `.github/workflows/build.yml` baut bei jedem Push auf `main` und bei
-`v*`-Tags das Frontend und packt `dist/` zusammen mit `system_bridge.py`,
-`start.sh` und `start.bat` zu `itec-photobooth.zip`. Da `system_bridge.py`
+`v*`-Tags das Frontend und packt `dist/` zusammen mit `system_bridge.py`
+und `start.sh` zu `itec-photobooth.zip`. Da `system_bridge.py`
 nur die Python-Standardbibliothek nutzt, ist das Paket plattformunabhängig.
 Bei Tags wird zusätzlich ein GitHub Release mit dem ZIP erstellt.
 

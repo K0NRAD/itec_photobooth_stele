@@ -109,7 +109,7 @@
   async function composeAndUpload() {
     transition('composing');
     statusMessage = 'Bild wird erstellt...';
-    const blob = await composeImage(pb.photos, pb.selectedFormat, pb.background);
+    const blob = await composeImage(pb.photos, pb.selectedFormat, pb.background, pb.caption);
     pendingBlob = blob;
     previewUrl = URL.createObjectURL(blob);
     transition('preview');

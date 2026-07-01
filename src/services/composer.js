@@ -10,31 +10,69 @@
 const WIDTH = 1080;
 const HEIGHT = 1920;
 
+/** Höhe des weißen Beschriftungsstreifens am unteren Rand (nur wenn Text gesetzt). */
+const CAPTION_HEIGHT = 150;
+
 /**
  * Erstellt das fertige Ausgabebild als JPEG-Blob.
  * @param {string[]} photoUrls - Blob-URLs der Fotos
  * @param {PhotoFormat} format
  * @param {Background} background
+ * @param {string} [caption] - Beschriftung auf dem weißen Streifen unten
  * @returns {Promise<Blob>}
  */
-export async function composeImage(photoUrls, format, background) {
+export async function composeImage(photoUrls, format, background, caption = '') {
   const canvas = document.createElement('canvas');
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
   const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas 2D-Kontext nicht verfügbar');
 
   await drawBackground(ctx, background);
 
   const images = await loadImages(photoUrls);
 
+  const text = caption.trim();
+  const captionH = text ? CAPTION_HEIGHT : 0;
+  const contentHeight = HEIGHT - captionH;
+
   switch (format) {
-    case 'stripe':   drawStripe(ctx, images);   break;
-    case 'collage':  drawCollage(ctx, images);  break;
-    case 'polaroid': drawPolaroid(ctx, images); break;
-    case 'grid':     drawGrid(ctx, images);     break;
+    case 'stripe':   drawStripe(ctx, images, contentHeight);   break;
+    case 'collage':  drawCollage(ctx, images, contentHeight);  break;
+    case 'polaroid': drawPolaroid(ctx, images, contentHeight); break;
+    case 'grid':     drawGrid(ctx, images, contentHeight);     break;
   }
 
+  if (captionH) drawCaption(ctx, text, contentHeight, captionH);
+
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+}
+
+/**
+ * Zeichnet den weißen Beschriftungsstreifen mit zentriertem Text.
+ * Die Schriftgröße wird verkleinert, bis der Text in die Breite passt.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {string} text
+ * @param {number} y - Obere Kante des Streifens
+ * @param {number} h - Höhe des Streifens
+ */
+function drawCaption(ctx, text, y, h) {
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, y, WIDTH, h);
+
+  const maxWidth = WIDTH - 100;
+  let fontSize = 56;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  do {
+    ctx.font = `italic ${fontSize}px Georgia, serif`;
+    if (ctx.measureText(text).width <= maxWidth) break;
+    fontSize -= 2;
+  } while (fontSize > 20);
+
+  ctx.fillStyle = '#333333';
+  ctx.fillText(text, WIDTH / 2, y + h / 2);
+  ctx.textBaseline = 'alphabetic';
 }
 
 /**
@@ -55,11 +93,12 @@ async function drawBackground(ctx, bg) {
  * Photo Stripe: 3 Fotos vertikal gestapelt mit weißem Rahmen.
  * @param {CanvasRenderingContext2D} ctx
  * @param {HTMLImageElement[]} images
+ * @param {number} height - Verfügbare Höhe (ohne Beschriftungsstreifen)
  */
-function drawStripe(ctx, images) {
+function drawStripe(ctx, images, height) {
   const padding = 24;
   const innerWidth = WIDTH - padding * 2;
-  const slotHeight = Math.floor((HEIGHT - padding * 4) / 3);
+  const slotHeight = Math.floor((height - padding * 4) / 3);
 
   images.slice(0, 3).forEach((img, i) => {
     const y = padding + i * (slotHeight + padding);
@@ -73,12 +112,13 @@ function drawStripe(ctx, images) {
  * Photo Collage: 4 Fotos asymmetrisch angeordnet.
  * @param {CanvasRenderingContext2D} ctx
  * @param {HTMLImageElement[]} images
+ * @param {number} height - Verfügbare Höhe (ohne Beschriftungsstreifen)
  */
-function drawCollage(ctx, images) {
+function drawCollage(ctx, images, height) {
   const pad = 20;
   const half = Math.floor((WIDTH - pad * 3) / 2);
-  const tall = Math.floor((HEIGHT - pad * 3) * 0.55);
-  const short = HEIGHT - pad * 3 - tall;
+  const tall = Math.floor((height - pad * 3) * 0.55);
+  const short = height - pad * 3 - tall;
 
   const positions = [
     { x: pad,          y: pad,           w: half, h: tall  },
@@ -96,15 +136,16 @@ function drawCollage(ctx, images) {
 }
 
 /**
- * Polaroid: 1 Foto mit breitem weißem Rahmen und Caption-Bereich.
+ * Polaroid: 1 Foto mit breitem weißem Rahmen.
  * @param {CanvasRenderingContext2D} ctx
  * @param {HTMLImageElement[]} images
+ * @param {number} height - Verfügbare Höhe (ohne Beschriftungsstreifen)
  */
-function drawPolaroid(ctx, images) {
+function drawPolaroid(ctx, images, height) {
   const frameW = WIDTH - 120;
   const frameH = Math.floor(frameW * 1.25);
   const frameX = 60;
-  const frameY = Math.floor((HEIGHT - frameH) / 2);
+  const frameY = Math.floor((height - frameH) / 2);
   const borderSide = 32;
   const borderTop = 32;
   const borderBottom = Math.floor(frameW * 0.18);
@@ -122,23 +163,18 @@ function drawPolaroid(ctx, images) {
   const photoH = frameH - borderTop - borderBottom;
 
   drawFill(ctx, images[0], photoX, photoY, photoW, photoH);
-
-  // Caption-Bereich
-  ctx.fillStyle = '#333333';
-  ctx.font = `italic 36px Georgia, serif`;
-  ctx.textAlign = 'center';
-  ctx.fillText('✦  photobooth  ✦', frameX + frameW / 2, frameY + frameH - borderBottom / 2 + 10);
 }
 
 /**
  * Photo Grid: 4 Fotos in 2×2 Raster.
  * @param {CanvasRenderingContext2D} ctx
  * @param {HTMLImageElement[]} images
+ * @param {number} height - Verfügbare Höhe (ohne Beschriftungsstreifen)
  */
-function drawGrid(ctx, images) {
+function drawGrid(ctx, images, height) {
   const pad = 20;
   const cellW = Math.floor((WIDTH - pad * 3) / 2);
-  const cellH = Math.floor((HEIGHT - pad * 3) / 2);
+  const cellH = Math.floor((height - pad * 3) / 2);
 
   images.slice(0, 4).forEach((img, i) => {
     const col = i % 2;

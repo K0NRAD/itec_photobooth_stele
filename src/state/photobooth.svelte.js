@@ -23,6 +23,7 @@ export const PHOTO_COUNT = {
  *   selectedFormat: PhotoFormat,
  *   photos: string[],
  *   background: Background,
+ *   caption: string,
  *   selectedCameraId: string|null,
  *   resultUrl: string|null,
  *   sessionId: string,
@@ -33,6 +34,7 @@ export const pb = $state({
   selectedFormat: /** @type {PhotoFormat} */ ('stripe'),
   photos: /** @type {string[]} */ ([]),
   background: loadBackground(),
+  caption: loadCaption(),
   selectedCameraId: loadCameraId(),
   resultUrl: /** @type {string|null} */ (null),
   sessionId: '',
@@ -99,6 +101,31 @@ export function reset() {
   pb.resultUrl = null;
   pb.sessionId = '';
   transition('idle');
+}
+
+/**
+ * Setzt die Foto-Beschriftung und speichert sie persistent.
+ * @param {string} text
+ */
+export function setCaption(text) {
+  pb.caption = text;
+  try {
+    localStorage.setItem('pb_caption', text);
+  } catch { /* ignore */ }
+}
+
+/** Standard-Beschriftung, falls noch keine gespeichert wurde. */
+const DEFAULT_CAPTION = 'ITEC - Schwarz Digits';
+
+/**
+ * @returns {string}
+ */
+function loadCaption() {
+  try {
+    return localStorage.getItem('pb_caption') ?? DEFAULT_CAPTION;
+  } catch {
+    return DEFAULT_CAPTION;
+  }
 }
 
 /**
