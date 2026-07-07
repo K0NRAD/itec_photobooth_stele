@@ -47,7 +47,7 @@
     },
     {
       id: 'grid',
-      label: 'Grid',
+      label: 'Raster',
       description: '4 Fotos',
       icon: '⊟',
       preview: 'grid',

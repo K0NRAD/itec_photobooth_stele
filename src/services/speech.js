@@ -11,7 +11,7 @@ const COMMANDS = {
   stripe:  ['streifen', 'stripe', 'fotostreifen'],
   collage: ['collage', 'fotocollage', 'zusammenstellung'],
   polaroid:['polaroid'],
-  grid:    ['grid', 'grit', 'raster', 'fotoraster'],
+  grid:    ['grid', 'grit', 'raster', 'fotoraster', 'gitter'],
   capture: ['foto', 'cheese', 'aufnehmen', 'jetzt', 'schießen', 'klick'],
   next:    ['weiter', 'fertig', 'nächste', 'done', 'ok', 'okay'],
   save:    ['speichern', 'hochladen', 'ja', 'okay', 'weiter', 'done'],
