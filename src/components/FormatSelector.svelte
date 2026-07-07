@@ -57,7 +57,7 @@
 
 <div class="format-selector">
   <h2>Format wählen</h2>
-  <p class="hint">Tippe oder sage den Namen</p>
+  <p class="hint">Sage den Namen</p>
 
   <div class="timer-bar">
     <div class="timer-fill" style="width: {(remaining / timeout) * 100}%"></div>

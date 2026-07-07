@@ -38,15 +38,13 @@
     <canvas bind:this={canvas}></canvas>
   </div>
 
-  <div class="url-text">{url}</div>
-
   <div class="timer-bar">
     <div class="timer-fill" style="width: {(remaining / timeout) * 100}%"></div>
   </div>
   <p class="timer-text">Schließt automatisch in {remaining}s</p>
 
   <button class="close-btn" onclick={onClose}>Abbrechen</button>
-  <p class="hint">Oder sage <strong>"Abbrechen"</strong></p>
+  <p class="hint">Sage <strong>"Abbrechen"</strong></p>
 </div>
 
 <style>

@@ -44,16 +44,16 @@ export function startSpeechRecognition(onCommand, lang = 'de-DE') {
 
     recognition = new SR();
     recognition.lang = lang;
-    recognition.continuous = true;
+    recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.maxAlternatives = 6;
+    recognition.maxAlternatives = 1;
 
     recognition.onresult = (/** @type {SpeechRecognitionEvent} */ event) => {
       if (cooldown) return;
       for (let i = event.resultIndex; i < event.results.length; i++) {
         for (let j = 0; j < event.results[i].length; j++) {
           const raw = event.results[i][j].transcript.trim().toLowerCase();
-          console.log(raw);
+          console.log(`raw:"${raw}, result index: ${i}"`);
           const command = matchCommand(raw);
           if (command) {
             cooldown = true;
