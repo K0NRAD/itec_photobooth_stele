@@ -26,7 +26,7 @@
   const formats = [
     {
       id: 'stripe',
-      label: 'Fotostreifen',
+      label: 'Streifen',
       description: '3 Fotos',
       icon: '▣',
       preview: 'stripe',
@@ -47,7 +47,7 @@
     },
     {
       id: 'grid',
-      label: 'Photo Grid',
+      label: 'Grid',
       description: '4 Fotos',
       icon: '⊟',
       preview: 'grid',
